@@ -1,11 +1,13 @@
 """Executed inside the image build, not on the user's CPU notebook kernel."""
 
+import cv2
 import tensorflow as tf
 from object_detection import inputs
 from object_detection.builders import model_builder
 from object_detection.protos import pipeline_pb2
 
 assert tf.__version__ == "2.13.0"
+assert cv2.__version__.split(".")[0] == "4"
 assert inputs._LABEL_OFFSET == 1
 assert callable(model_builder.build)
 assert pipeline_pb2.TrainEvalPipelineConfig()
