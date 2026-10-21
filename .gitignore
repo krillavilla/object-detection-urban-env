@@ -128,3 +128,42 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# AWS credentials and local environment settings (never commit these).
+.aws/
+credentials
+credentials.csv
+*accessKeys.csv
+.env.*
+*.pem
+
+# Waymo datasets and downloaded pretrained checkpoints.
+*.tfrecord
+*.tfrecord.*
+*.tar.gz
+*.tgz
+pretrained/
+pretrained_models/
+pretrained_checkpoints/
+checkpoints/
+checkpoint/
+efficientdet_d*/
+ssd_mobilenet_v2*/
+ssd_resnet50*/
+faster_rcnn_resnet50*/
+*.ckpt*
+*.data-?????-of-?????
+*.index
+
+# Training/export artifacts and generated videos.
+model.tar.gz
+exported_models/
+exported_model/
+saved_model/
+model_artifacts/
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+.ipynb_checkpoints/

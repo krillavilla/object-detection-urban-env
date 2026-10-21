@@ -1,0 +1,3 @@
+#!/bin/sh
+# Fail closed if Python or the scanner is unavailable.
+exec python3 scripts/check_aws_secrets.py

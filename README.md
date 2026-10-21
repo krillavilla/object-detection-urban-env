@@ -1,5 +1,37 @@
 # Object detection in an urban environment
 
+## Public repository safety
+
+This is a standalone coursework copy of the
+[Udacity starter](https://github.com/udacity/cd2688-object-detection-in-urban-environment-project),
+retaining its original history and license. Original training/deployment notebooks
+and the EfficientNet pipeline configuration are unchanged during repository setup.
+
+After cloning, enable the repository's credential checks (repeat in Studio):
+
+```bash
+git config --local core.hooksPath .githooks
+python3 scripts/check_aws_secrets.py
+```
+
+The pre-commit hook checks all staged files, including saved notebook outputs.
+The pre-push hook checks reachable Git history. Both reject likely AWS access-key
+IDs and AWS secret/session credential field names without printing their values.
+Hooks are local, can be bypassed, and pattern checks are not a guarantee: review
+notebooks and diffs before committing. No server-side credential check is
+configured. Never put AWS keys or tokens in this repository; Studio should use
+its execution role.
+
+The ignore rules exclude local credentials, environment files, TFRecords,
+downloaded checkpoints, exported models, and video files. Existing starter images
+and the example animation remain tracked. Keep generated videos and large model
+artifacts outside Git and download them separately for backup.
+
+Training and deployment launch paid AWS resources. Repository setup does not
+launch any resources. **TODO:** Complete the read-only budget review before
+running either notebook; use us-east-1, generic resource names, at most one
+training job and one endpoint, and remove billable resources promptly.
+
 In this project, you will learn how to train an object detection model using the [Tensorflow Object Detection API](https://tensorflow-object-detection-api-tutorial.readthedocs.io/en/latest/index.html) and [AWS Sagemaker](https://aws.amazon.com/sagemaker/). At the end of this project, you will be able to generate videos such as the one below. 
 
 <p align="center">
