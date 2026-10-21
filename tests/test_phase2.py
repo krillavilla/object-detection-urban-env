@@ -186,11 +186,23 @@ class GuardTests(unittest.TestCase):
 
 class AssetTests(unittest.TestCase):
     def test_original_training_notebook_and_config_unchanged(self):
-        for relative in ("1_train_model.ipynb", "source_dir/pipeline.config"):
-            expected = subprocess.check_output(
-                ["git", "-C", str(ROOT), "show", "ab8008a:1_model_training/" + relative]
-            )
-            self.assertEqual((TRAINING / relative).read_bytes(), expected)
+        relative = "1_train_model.ipynb"
+        original = json.loads(subprocess.check_output(
+            ["git", "-C", str(ROOT), "show", "ab8008a:1_model_training/" + relative]
+        ))
+        current = json.loads((TRAINING / relative).read_text())
+        self.assertEqual(len(current["cells"]), len(original["cells"]))
+        for index, (actual, expected) in enumerate(zip(current["cells"], original["cells"])):
+            if index == 19:
+                self.assertEqual(actual["cell_type"], "markdown")
+                self.assertNotIn("# your write-up goes here.", "".join(actual["source"]))
+            else:
+                self.assertEqual(actual, expected, f"Unexpected change in notebook cell {index}.")
+        relative = "source_dir/pipeline.config"
+        expected = subprocess.check_output(
+            ["git", "-C", str(ROOT), "show", "ab8008a:1_model_training/" + relative]
+        )
+        self.assertEqual((TRAINING / relative).read_bytes(), expected)
 
     def test_deployment_notebook_has_guarded_lifecycle_and_video_output(self):
         notebook = json.loads((ROOT / "2_run_inference/2_deploy_model.ipynb").read_text())
