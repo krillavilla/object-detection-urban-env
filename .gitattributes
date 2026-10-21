@@ -1,0 +1,5 @@
+# Blank context lines in a unified diff must keep their leading context space.
+1_model_training/model_zoo/*.diff whitespace=-blank-at-eol,-blank-at-eof
+# Preserve the upstream Model Zoo configs' trailing blank lines verbatim.
+1_model_training/model_zoo/*.config whitespace=-blank-at-eof
+1_model_training/source_dir/*.config whitespace=-blank-at-eof

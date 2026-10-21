@@ -167,3 +167,9 @@ model_artifacts/
 *.mkv
 *.webm
 .ipynb_checkpoints/
+
+# Model Garden, isolated source/checkpoint bundles, and session-local run records.
+1_model_training/docker/models/
+1_model_training/.phase2/
+1_model_training/docker/ecr_image_fullname*.txt
+*.part

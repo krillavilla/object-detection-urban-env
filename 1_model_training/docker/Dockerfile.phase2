@@ -1,0 +1,24 @@
+FROM tensorflow/tensorflow:2.13.0-gpu
+
+ARG DEBIAN_FRONTEND=noninteractive
+ENV PIP_NO_CACHE_DIR=1 \
+    PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python \
+    TF_CPP_MIN_LOG_LEVEL=2
+
+# Building and the smoke tests need CPU only; remote training uses the T4 GPU.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git protobuf-compiler libgl1 libglib2.0-0 && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY constraints-phase2.txt /tmp/constraints-phase2.txt
+COPY models/research/object_detection /opt/models/research/object_detection
+COPY models/research/slim /opt/models/research/slim
+WORKDIR /opt/models/research
+RUN protoc object_detection/protos/*.proto --python_out=. && \
+    cp object_detection/packages/tf2/setup.py ./ && \
+    python -m pip install --constraint /tmp/constraints-phase2.txt \
+        . sagemaker-training==4.8.1 && \
+    python -m pip check
+
+COPY smoke_phase2.py /opt/smoke_phase2.py
+RUN CUDA_VISIBLE_DEVICES="" python /opt/smoke_phase2.py

@@ -1,0 +1,14 @@
+{
+  "ssd_mobilenet": {
+    "source_url": "https://raw.githubusercontent.com/tensorflow/models/5f846b08bedd4866ee5da6f93a2c07d521cf2e02/research/object_detection/configs/tf2/ssd_mobilenet_v2_fpnlite_640x640_coco17_tpu-8.config",
+    "revision": "5f846b08bedd4866ee5da6f93a2c07d521cf2e02",
+    "sha256": "8b4bba3490fd8c0898fb800657d197ad825759459fd091ec3ec7bd66d98bb424",
+    "kind": "Model Zoo reference training config; not a project result"
+  },
+  "faster_rcnn": {
+    "source_url": "https://raw.githubusercontent.com/tensorflow/models/5f846b08bedd4866ee5da6f93a2c07d521cf2e02/research/object_detection/configs/tf2/faster_rcnn_resnet50_v1_640x640_coco17_tpu-8.config",
+    "revision": "5f846b08bedd4866ee5da6f93a2c07d521cf2e02",
+    "sha256": "627aeb88c9887d53ce80587fb712dc970503f3263540c7751b34198616e1da20",
+    "kind": "Model Zoo reference training config; not a project result"
+  }
+}

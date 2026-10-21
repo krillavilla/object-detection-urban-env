@@ -1,0 +1,82 @@
+--- model_zoo/ssd_mobilenet_v2_fpnlite_640x640_coco17_tpu-8.config
++++ source_dir/pipeline_ssd_mobilenet.config
+@@ -10,7 +10,7 @@
+   ssd {
+     inplace_batchnorm_update: true
+     freeze_batchnorm: false
+-    num_classes: 90
++    num_classes: 4
+     box_coder {
+       faster_rcnn_box_coder {
+         y_scale: 10.0
+@@ -139,13 +139,13 @@
+ 
+ train_config: {
+   fine_tune_checkpoint_version: V2
+-  fine_tune_checkpoint: "PATH_TO_BE_CONFIGURED/mobilenet_v2.ckpt-1"
+-  fine_tune_checkpoint_type: "classification"
+-  batch_size: 128
+-  sync_replicas: true
++  fine_tune_checkpoint: "checkpoint/ckpt-0"
++  fine_tune_checkpoint_type: "detection"
++  batch_size: 8
++  sync_replicas: false
+   startup_delay_steps: 0
+-  replicas_to_aggregate: 8
+-  num_steps: 50000
++  replicas_to_aggregate: 1
++  num_steps: 2000
+   data_augmentation_options {
+     random_horizontal_flip {
+     }
+@@ -164,10 +164,10 @@
+     momentum_optimizer: {
+       learning_rate: {
+         cosine_decay_learning_rate {
+-          learning_rate_base: .08
+-          total_steps: 50000
+-          warmup_learning_rate: .026666
+-          warmup_steps: 1000
++          learning_rate_base: 0.005
++          total_steps: 2000
++          warmup_learning_rate: 0.001666667
++          warmup_steps: 100
+         }
+       }
+       momentum_optimizer_value: 0.9
+@@ -176,26 +176,28 @@
+   }
+   max_number_of_boxes: 100
+   unpad_groundtruth_tensors: false
++  use_bfloat16: false
+ }
+ 
+ train_input_reader: {
+-  label_map_path: "PATH_TO_BE_CONFIGURED/label_map.txt"
++  label_map_path: "/opt/ml/input/data/train/label_map.pbtxt"
+   tf_record_input_reader {
+-    input_path: "PATH_TO_BE_CONFIGURED/train2017-?????-of-00256.tfrecord"
++    input_path: "/opt/ml/input/data/train/*.tfrecord"
+   }
+ }
+ 
+ eval_config: {
+   metrics_set: "coco_detection_metrics"
++  batch_size: 1
+   use_moving_averages: false
+ }
+ 
+ eval_input_reader: {
+-  label_map_path: "PATH_TO_BE_CONFIGURED/label_map.txt"
++  label_map_path: "/opt/ml/input/data/val/label_map.pbtxt"
+   shuffle: false
+   num_epochs: 1
+   tf_record_input_reader {
+-    input_path: "PATH_TO_BE_CONFIGURED/val2017-?????-of-00032.tfrecord"
+-  }
+-}
+-
++    input_path: "/opt/ml/input/data/val/*.tfrecord"
++  }
++}
++

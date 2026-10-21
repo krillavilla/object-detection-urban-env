@@ -1,0 +1,15 @@
+# Keep datasets, checkpoints, Git history, and unrelated Model Garden code out.
+**
+!Dockerfile.phase2
+!constraints-phase2.txt
+!smoke_phase2.py
+!models/
+!models/research/
+!models/research/object_detection/
+!models/research/object_detection/**
+!models/research/slim/
+!models/research/slim/**
+**/.git
+**/__pycache__
+**/*.ipynb
+**/test_data
