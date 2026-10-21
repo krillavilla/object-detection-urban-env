@@ -135,7 +135,7 @@ def download_checkpoint(spec, training_dir):
             return checkpoint
     if not archive.exists():
         temporary = archive.with_suffix(".part")
-        url = ("https://download.tensorflow.org/models/object_detection/tf2/"
+        url = ("https://storage.googleapis.com/download.tensorflow.org/models/object_detection/tf2/"
                f"20200711/{spec['model']}.tar.gz")
         with urllib.request.urlopen(url, timeout=120) as source, temporary.open("wb") as out:
             shutil.copyfileobj(source, out)

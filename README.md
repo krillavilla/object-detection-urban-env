@@ -34,8 +34,8 @@ training job and one endpoint, and remove billable resources promptly.
 
 ## Phase 2: use the guarded model copies
 
-The supplied environment is a **SageMaker Notebook Instance**, kernel
-`conda_tensorflow2_p310`, not Studio. Its Git repository setting clones here:
+The supplied Amazon Linux 2023 environment is a **SageMaker Notebook Instance**, kernel
+`conda_python3`, not Studio. Its Git repository setting clones here:
 `/home/ec2-user/SageMaker/object-detection-urban-env`.
 Use the supplied `AmazonSageMaker-ExecutionRole`; do not configure manual keys.
 The role is expected to have AmazonSageMakerFullAccess, AmazonS3FullAccess,
@@ -123,13 +123,16 @@ Notebook Instance builds the GPU-capable image and controls remote jobs.
 Local Docker preflight uses CPU only; training runs remotely on g4dn.xlarge.
 
 The configured **30 GB persistent volume** backs `/home/ec2-user/SageMaker`.
-It does **not** automatically enlarge Docker's root filesystem. Docker normally
-stores images/layers under `/var/lib/docker`; the disk cell queries
-`docker info --format '{{.DockerRootDir}}'` to check the actual location.
+Docker's data root was moved to `/home/ec2-user/SageMaker/docker`; re-apply that
+relocation after every Notebook Instance restart before building or pulling images.
+The disk cell queries `docker info --format '{{.DockerRootDir}}'` to check the
+actual location rather than assuming the default `/var/lib/docker`.
 The preflight requires 20 GiB free on Docker's filesystem, 3 GiB for source/
 checkpoint files, and 2 GiB for temporary files, summed for shared filesystems.
 A fresh 30 GB volume might hold the project files, but **we cannot certify the
-Docker build fits without this notebook-side check and a real build**.
+Docker build fits without this notebook-side check and a real build**. Its 20 GiB
+Docker requirement estimates build headroom only; it does not account for an
+already-built image occupying the Docker data root.
 There is no automatic cleanup, resizing, daemon restart, or Docker relocation.
 Image setup disables pip caches and limits the Docker build context.
 The original Dockerfile/build script remain as references; use `Dockerfile.phase2`.

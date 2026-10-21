@@ -192,17 +192,36 @@ class AssetTests(unittest.TestCase):
             )
             self.assertEqual((TRAINING / relative).read_bytes(), expected)
 
-    def test_deployment_code_and_category_index_unchanged(self):
-        rel = "2_run_inference/2_deploy_model.ipynb"
-        original = json.loads(subprocess.check_output(
-            ["git", "-C", str(ROOT), "show", "ab8008a:" + rel]
-        ))
-        current = json.loads((ROOT / rel).read_text())
-        code = lambda n: [c["source"] for c in n["cells"] if c["cell_type"] == "code"]
-        self.assertEqual(code(original), code(current))
-        for index, c in enumerate(current["cells"]):
-            if "model.deploy(" in "".join(c.get("source", [])):
-                self.assertIn("COST GUARD", "".join(current["cells"][index - 1]["source"]))
+    def test_deployment_notebook_has_guarded_lifecycle_and_video_output(self):
+        notebook = json.loads((ROOT / "2_run_inference/2_deploy_model.ipynb").read_text())
+        source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+        for cell in notebook["cells"]:
+            if cell["cell_type"] == "code":
+                self.assertIsNone(cell["execution_count"])
+                self.assertEqual(cell["outputs"], [])
+        self.assertIn(
+            's3://obj-detection-proj/artifacts/od-faster-rcnn-01/'
+            'od-faster-rcnn-01/output/model.tar.gz',
+            source,
+        )
+        self.assertIn('sm.describe_training_job(TrainingJobName=TRAINING_JOB_NAME)', source)
+        self.assertIn('s3.head_object(', source)
+        self.assertIn('REGION = "us-east-1"', source)
+        self.assertIn('ENDPOINT_NAME = "od-faster-rcnn-endpoint"', source)
+        self.assertIn('ENDPOINT_INSTANCE_TYPE = "ml.g4dn.xlarge"', source)
+        self.assertIn('TENSORFLOW_SERVING_VERSION = "2.13"', source)
+        self.assertIn('%pip install "sagemaker==2.243.2"', source)
+        self.assertIn("ALLOW_ENDPOINT = False", source)
+        self.assertIn("def cleanup_notebook_resources():", source)
+        self.assertIn('sm.delete_endpoint(EndpointName=ENDPOINT_NAME)', source)
+        self.assertIn("sm.delete_endpoint_config", source)
+        self.assertIn("sm.delete_model", source)
+        self.assertIn("finally:\n        cleanup_notebook_resources()", source)
+        self.assertIn('cv2.VideoWriter_fourcc(*"mp4v")', source)
+        self.assertIn('Path("output.mp4")', source)
+        self.assertIn("CAP_PROP_FRAME_COUNT", source)
+        self.assertIn("annotated_frame_", source)
+        self.assertIn("4: {'id': 4, 'name': 'cyclist'}", source)
 
     def test_new_notebooks_are_unexecuted_python_with_launch_guards(self):
         for key in phase2.EXPERIMENTS:
@@ -220,6 +239,9 @@ class AssetTests(unittest.TestCase):
                     self.assertIn("ALLOW_NEW_JOB = False", source)
                     self.assertIn("max_run=SPEC", source)
                     self.assertIn('output_path=SPEC["output_path"]', source)
+                    self.assertNotIn("max_retry_attempts", source)
+                    self.assertNotIn("tensorboard_output_config", source)
+            self.assertEqual(nb["metadata"]["kernelspec"]["name"], "conda_python3")
 
     def test_model_zoo_provenance_and_diffs(self):
         folder = TRAINING / "model_zoo"
@@ -364,6 +386,10 @@ class AssetTests(unittest.TestCase):
                 self.assertEqual(first, second)
                 download.assert_called_once()
                 self.assertTrue((first / "ckpt-0.index").is_file())
+                self.assertIn(
+                    "https://storage.googleapis.com/download.tensorflow.org/models/object_detection/tf2/",
+                    download.call_args.args[0],
+                )
 
 
 if __name__ == "__main__":

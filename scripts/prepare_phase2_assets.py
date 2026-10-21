@@ -6,12 +6,14 @@ import difflib
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 import sys
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 TRAINING = ROOT / "1_model_training"
 sys.path.insert(0, str(TRAINING))
+from deployment_phase6 import configure_deployment_notebook
 from phase2 import EXPERIMENTS, MODEL_GARDEN_REVISION, experiment
 
 
@@ -31,7 +33,7 @@ def notebook(spec):
     title = "SSD MobileNet V2 FPNLite" if key == "ssd_mobilenet" else "Faster R-CNN ResNet50 V1"
     cells = [
         cell("markdown", f"""# {title} — guarded sequential experiment
-Use `conda_tensorflow2_p310` on the supplied **Notebook Instance**, not Studio.
+Use `conda_python3` on the supplied Amazon Linux 2023 **Notebook Instance**, not Studio.
 Open this copy; the original EfficientDet notebook/config remain reference-only.
 Public labels stay {{1,2,4}}; four output slots preserve cyclist ID 4.
 Batch **{spec['batch_size']}**, **2,000 steps**, requested image exposures
@@ -184,6 +186,8 @@ Provisioning/billing overhead, storage and notebook compute are additional;
 this is not an all-inclusive dollar cap. A timeout may prevent export.
 Training → full validation → export happen **sequentially in this same job**.
 No Spot, tuning, retries, warm pools, managed TensorBoard, or extra Debugger jobs.
+Checkpoint synchronization still writes checkpoints and TensorBoard event files to
+`s3://obj-detection-proj/checkpoints/<job>/`; no TensorBoardOutputConfig is used.
 The original tiny-batch runtime estimates are not measurements for these batches.
 """),
         cell("code", """def training_preflight():
@@ -205,10 +209,6 @@ The original tiny-batch runtime estimates are not measurements for these batches
 def submit_training(job_name):
     # This closure is only called after existing/concurrent-job and budget guards.
     digest = config_hash(SPEC, source_dir)
-    tensorboard = sagemaker.debugger.TensorBoardOutputConfig(
-        s3_output_path=SPEC["tensorboard_path"],
-        container_local_output_path="/opt/ml/checkpoints",
-    )
     estimator = CustomFramework(
         role=role, image_uri=container, entry_point="run_training.sh",
         source_dir=str(source_dir), sagemaker_session=sm_session,
@@ -224,11 +224,10 @@ def submit_training(job_name):
             "model_garden_revision": MODEL_GARDEN_REVISION,
         },
         instance_count=1, instance_type="ml.g4dn.xlarge",
-        max_run=SPEC["max_run"], max_retry_attempts=0,
+        max_run=SPEC["max_run"],
         use_spot_instances=False,
         checkpoint_s3_uri=f"s3://{BUCKET}/checkpoints/{SPEC['job_name']}",
         checkpoint_local_path="/opt/ml/checkpoints",
-        tensorboard_output_config=tensorboard,
         debugger_hook_config=False, disable_profiler=True,
         base_job_name=SPEC["job_name"], tags=[],
     )
@@ -268,8 +267,8 @@ else:
     # Derive from the starter metadata, but never carry starter outputs forward.
     starter = json.loads((TRAINING / "1_train_model.ipynb").read_text())
     return dict(starter, cells=cells, metadata={
-        "kernelspec": {"display_name": "conda_tensorflow2_p310",
-                       "language": "python", "name": "conda_tensorflow2_p310"},
+        "kernelspec": {"display_name": "conda_python3",
+                       "language": "python", "name": "conda_python3"},
         "language_info": {"name": "python", "version": "3.10"},
     })
 
@@ -353,27 +352,10 @@ def main():
         output.write_text(json.dumps(notebook(experiment(key)), indent=1) + "\n")
     (reference_dir / "provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
     deployment = ROOT / "2_run_inference/2_deploy_model.ipynb"
-    document = json.loads(deployment.read_text())
-    for index, item in enumerate(document["cells"]):
-        if item["cell_type"] == "code" and "model.deploy(" in "".join(item["source"]):
-            if index and "COST GUARD" in "".join(document["cells"][index - 1]["source"]):
-                guard = document["cells"][index - 1]
-                if "id" not in guard:
-                    guard["id"] = hashlib.sha256("".join(guard["source"]).encode()).hexdigest()[:12]
-                    deployment.write_text(json.dumps(document, indent=1) + "\n")
-                break
-            document["cells"].insert(index, cell("markdown", """## COST GUARD — endpoint creation (DO NOT RUN before Phase 6)
-This original cell creates **one ml.g4dn.xlarge** endpoint in the configured region.
-Future deployment must be restricted to **us-east-1**, **$0.736/hour**, budget
-**0.5–1 hour / $0.37–$0.74**, plus Notebook Instance time and storage.
-The endpoint bills while idle. This is an estimate, not measured inference time.
-**The original code below has no restart/concurrency guard or cleanup yet.**
-Wait for Phase 6 to supply the chosen artifact, enforce one endpoint, and add
-endpoint/config/model deletion with crash recovery. Do not run this notebook now.
-The code and public category IDs {1,2,4} are intentionally unchanged.
-"""))
-            deployment.write_text(json.dumps(document, indent=1) + "\n")
-            break
+    starter_deployment = json.loads(subprocess.check_output(
+        ["git", "-C", str(ROOT), "show", "ab8008a:2_run_inference/2_deploy_model.ipynb"]
+    ))
+    deployment.write_text(json.dumps(configure_deployment_notebook(starter_deployment), indent=1) + "\n")
 
 
 if __name__ == "__main__":
