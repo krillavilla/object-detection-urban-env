@@ -123,6 +123,11 @@ Faster R-CNN is selected for deployment because its measured mAP is higher
 (0.082 vs. 0.066). Its artifact was verified against
 `DescribeTrainingJob("od-faster-rcnn-01").ModelArtifacts.S3ModelArtifacts`:
 `s3://obj-detection-proj/artifacts/od-faster-rcnn-01/od-faster-rcnn-01/output/model.tar.gz`.
+### Deployment
+
+Faster R-CNN was served with TensorFlow Serving 2.13 on one `ml.g4dn.xlarge`.
+The run processed 100 frames; `output.mp4` was verified at 100 frames and
+640x640. The endpoint and model were deleted automatically afterwards.
 
 ## TODO
 - Record BillableTimeInSeconds and console duration for both jobs.
